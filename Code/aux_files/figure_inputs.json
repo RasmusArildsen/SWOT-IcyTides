@@ -1,0 +1,60 @@
+{
+  "version": "November2026_190_191",
+  "default_field": "Completed191 all-freeGLS",
+  "products": {
+    "maps.h5": {
+      "variables": [
+        "x",
+        "y",
+        "m2_amp",
+        "s2_amp",
+        "k1_amp",
+        "o1_amp",
+        "m2_cats_amp",
+        "s2_cats_amp",
+        "k1_cats_amp",
+        "o1_cats_amp"
+      ],
+      "figures": [
+        2,
+        3
+      ],
+      "units": "m",
+      "method": "Finite native coefficients, no smoothing/fills"
+    },
+    "figure1.h5": {
+      "variables": [
+        "x",
+        "y",
+        "mean",
+        "rema"
+      ],
+      "figures": [
+        1
+      ],
+      "method": "Matching final own100mstatics at original190 TIMEcentre"
+    },
+    "figure3.h5": {
+      "variables": [
+        "time_ns",
+        "observed",
+        "original_height",
+        "swot_tide",
+        "cats_tide",
+        "swot_tide_unsmoothed",
+        "cats_tide_unsmoothed",
+        "unavailable"
+      ],
+      "figures": [
+        3
+      ],
+      "method": "Frozen corridor and admission; original observations verified and retained by renderer; predictions from the selected fit."
+    }
+  },
+  "external_plot_assets": [
+    "atl06_reference",
+    "lima_mosaic",
+    "optical_mosaic"
+  ],
+  "qualification": "Paper panel layouts and fixed observation benchmark. Native maps are unsmoothed; CATS comparisons and the in-sample transect are not independent accuracy validation."
+}

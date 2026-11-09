@@ -1,0 +1,5 @@
+{
+  "observation_bands": 16,
+  "fit_parts_per_band": 4,
+  "gls_node_parts": 64
+}
