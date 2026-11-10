@@ -1,7 +1,7 @@
 # Larsen C: raw data to DEM and tidal maps
 
 Start with [DATA.md](DATA.md). It lists the observations, models, reference
-surface and map backgrounds used by the November 190/191-acquisition analysis.
+surface and map backgrounds used by the in the final 191-acquisition analysis.
 
 Run the six scripts below from the repository root. Each script states what
 it reads and writes, then carries out its steps with ordinary Python function
@@ -52,10 +52,7 @@ python Code/02_phase_corrections.py
 
 Runs the region-wide native phase correction, prepares the original reference
 histories, then runs the residual phase search. Accepted integer shifts move
-both height and horizontal location before regridding. The October addition
-is unchanged by these 190-acquisition repair layers. Its 16 matching PIXC
-source files are included in the 191-date input catalogue, but the paper run
-did not estimate new integer phase repairs for that date.
+both height and horizontal location before regridding.
 
 **Outputs:** `phase_region190.h5`, `phase_residual190.h5` and native reports.
 
@@ -70,9 +67,6 @@ DAC once. Raster WSE keeps its supplied geophysical convention. Native PIXC
 height has already been converted with geoid, solid-Earth, pole and load-tide
 fields inside the phase calculations. Residual repair values already have DAC
 removed and are inserted directly. Ocean tide remains for the tidal fit.
-
-Some correction calculations therefore occur in step 2, where the phase
-search needs them; step 3 assembles the final corrected observations.
 
 **Outputs:** one row per acquisition and observation bands defined by the geometry.
 
@@ -90,11 +84,6 @@ abs(height - REMA_reference - centre) <= 3.5 × NMAD
 centre = -2.0492310523986816 m
 NMAD   =  1.6168210713386535 m
 ```
-
-Missing REMA values are retained when the height is finite. Heights and clocks
-are not changed. Source cross-track distance must already be at least 10 km;
-native source-quality checks were applied during phase assessment. No new
-Raster quality-flag filter is introduced here.
 
 **Outputs:** one mask file per geometry band in `independent191/admission/`,
 including counts of admitted and rejected observations. The fitter reads these masks and checks
@@ -149,11 +138,10 @@ To inspect a script without reading data or starting a calculation:
 python Code/03_geophysical_and_dac.py --inputs Code/input_paths.example.json --dry-run
 ```
 
-Each script accepts `--inputs`, `--work-dir`, `--acquisitions 190` or `191`,
-and `--dry-run`. The available acquisition counts come from the catalogue in
-`aux_files/analysis.json`; the phase step uses the separate native inventory.
-Loops use the length of these lists rather than fixed date counts. The October
-addition is outside the native repair inventory.
+Each script accepts `--inputs`, `--work-dir`, and `--dry-run`. The available 
+acquisition counts come from the catalogue in`aux_files/analysis.json`; 
+the phase step uses the separate native inventory. Loops use the length of 
+these lists rather than fixed date counts. 
 
 Spatial band IDs come from `geometry.h5`. The chosen number of bands and fit
 parts per band are set once in `aux_files/processing_layout.json` and recorded
@@ -164,13 +152,3 @@ Use the same options throughout a run. Changing input paths
 requires a new work folder. Each script does its work in the current Python
 process. Large stages can be split into the original indexed jobs
 shown in [METHODS.md](METHODS.md).
-
-```bash
-python -m pytest -q
-```
-
-The current 191-acquisition GLS result remains experimental. Numerical
-convergence and CATS agreement do not establish accuracy. The original
-calibration reference and optical mosaic are external prerequisites; this is
-not a fresh reconstruction of those assets. See [METHODS.md](METHODS.md) for
-the inherited choices, array definitions and validation limits.
