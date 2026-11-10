@@ -44,16 +44,9 @@ weights use their squares. The source SHA, tune 1.345, tolerance 0.001 and
 Accepted fits require at least 12 unique/effective dates, full rank and a
 normalized joint-design condition no larger than 20. Failed fits stay missing.
 The connected model retains the original pair fits, 50 mm scatter floor,
-accepted-link degree balance and working covariance calibration. All eligible
-cells remain free. No tide coefficient prior, preserved mean, map smoothing
-or unsupported-cell fill is introduced.
+accepted-link degree balance and working covariance calibration. 
 
-The physical normal residual must be below `1e-7`. The full tide/TIME/static
-injected-signal error must be below `1e-5 m` before native export. Completed
-inputs, masks and code are recorded before fitting; changes require a new run
-folder.
-
-## CATS and the laser comparison
+## CATS and the ICESat-2 comparison
 
 Current CATS comparisons multiply each native complex constituent by the
 supplied flexure before interpolation, including supplied values above 100%.
