@@ -1,0 +1,33 @@
+{
+  "map_bounds_west_east_south_north": {
+    "shelf": [-65.9, -60.25, -70.15, -65.8],
+    "west": [-65.15, -63.70, -67.52, -66.78],
+    "north": [-61.86, -60.90, -66.56, -66.08]
+  },
+  "icesat2_window_utc": ["2024-11-23T19:59:33", "2026-07-07T08:07:39"],
+  "figure1": {
+    "aspect_latitude_deg": -67.5,
+    "latitude_ticks_deg": [-69.5, -69, -68.5, -68, -67.5, -67, -66.5, -66]
+  },
+  "figure2": {
+    "shelf_longitude_ticks_deg": [-65, -63, -61],
+    "shelf_latitude_ticks_deg": [-70, -68, -66]
+  },
+  "figure3": {
+    "profiles": [
+      {"date": "2025-09-05", "cycle": 38},
+      {"date": "2025-03-22", "cycle": 30}
+    ],
+    "minimum_distance_km": 2,
+    "start_label_lonlat": [-61.18, -66.12],
+    "feature_labels": [
+      {"lonlat": [-61.56, -66.14], "name": "NE", "distance_km": 5.8},
+      {"lonlat": [-61.82, -66.41], "name": "SW", "distance_km": 40.6}
+    ],
+    "highlighted_intervals": [
+      {"bounds_km": [4, 10.3], "color": "#377eb8"},
+      {"bounds_km": [38.9, 42.5], "color": "#e41a1c"}
+    ],
+    "unsmoothed_prediction_intervals_km": [[4.6, 8.6], [38.5, 42.9]]
+  }
+}

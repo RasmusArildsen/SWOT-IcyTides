@@ -1,1 +1,0 @@
-"""Shared paper-figure utilities."""

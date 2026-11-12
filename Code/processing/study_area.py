@@ -6,6 +6,7 @@ No elevation cutoff, grounded buffer, or dependence on observation availability.
 
 from pathlib import Path
 from functools import lru_cache
+import json
 import os
 import numpy as np
 from scipy import ndimage
@@ -15,79 +16,69 @@ ROOT = Path(__file__).resolve().parent
 DEFAULT_BEDMACHINE = (
     ROOT / "output/independent_surfaces/source_metadata/larsen_bedmachine_v4_mask.npz"
 )
-MASK_ID = "lcis_bedmachine_v4_floating_20260918"
-FRONT = np.array(
-    [
-        (-65.80, -60.25),
-        (-66.65, -60.25),
-        (-66.72, -60.70),
-        (-66.84, -61.05),
-        (-67.02, -61.32),
-        (-67.18, -61.50),
-        (-67.45, -61.55),
-        (-67.82, -61.55),
-        (-68.20, -61.53),
-        (-68.42, -61.42),
-        (-68.58, -61.18),
-        (-68.60, -61.03),
-        (-68.68, -60.79),
-        (-68.78, -60.78),
-        (-68.88, -61.06),
-        (-68.98, -61.08),
-        (-69.08, -60.91),
-        (-69.14, -60.73),
-        (-69.20, -60.47),
-        (-69.28, -60.25),
-        (-70.15, -60.25),
-    ]
-)
-SOUTH = np.array(
-    [
-        (-65.75, -70.12),
-        (-62.90, -70.12),
-        (-62.78, -69.73),
-        (-62.55, -69.48),
-        (-62.15, -69.42),
-        (-61.65, -69.40),
-        (-61.20, -69.28),
-        (-60.80, -69.42),
-        (-60.15, -69.20),
-    ]
-)
-LL = Transformer.from_crs(3031, 4326, always_xy=True)
-POLAR = Transformer.from_crs(4326, 3031, always_xy=True)
+STUDY_AREA = json.loads((ROOT.parent / "aux_files/study_area.json").read_text())
+MASK_ID = STUDY_AREA["mask_id"]
+TO_LL = Transformer.from_crs(3031, 4326, always_xy=True)
+TO_XY = Transformer.from_crs(4326, 3031, always_xy=True)
+
+
+def nearest_grid_indices(x, y, grid_x, grid_y, *, pad=0, spacing_m=None):
+    """Return nearest column, row and in-grid mask on regularly spaced axes."""
+    x, y = np.asarray(x), np.asarray(y)
+    if spacing_m is None:
+        dx, dy = grid_x[1] - grid_x[0], grid_y[1] - grid_y[0]
+    else:
+        dx = dy = spacing_m
+    finite = np.isfinite(x) & np.isfinite(y)
+    column = np.rint(np.where(finite, (x - grid_x[0]) / dx, 0)).astype("i8") + pad
+    row = np.rint(np.where(finite, (y - grid_y[0]) / dy, 0)).astype("i8") + pad
+    inside = (
+        finite
+        & (column >= 0) & (column < len(grid_x) + 2 * pad)
+        & (row >= 0) & (row < len(grid_y) + 2 * pad)
+    )
+    return column, row, inside
+
+
+def nearest_grid_cells(x, y, grid_x, grid_y, *, pad=0, spacing_m=None):
+    """Return row-major cell IDs, with -1 for points outside the grid."""
+    column, row, inside = nearest_grid_indices(
+        x, y, grid_x, grid_y, pad=pad, spacing_m=spacing_m
+    )
+    return np.where(inside, row * (len(grid_x) + 2 * pad) + column, -1)
 
 
 class StudyArea:
-    def __init__(self, bed):
+    def __init__(self, bed, definition=None):
+        definition = STUDY_AREA if definition is None else definition
+        self.bounds = definition["bounds_west_east_south_north"]
+        front = np.asarray(definition["front_lat_lon"])
+        self.front = front[np.argsort(front[:, 0])]
+        self.south = np.asarray(definition["south_lon_lat"])
         self.x = np.asarray(bed["x"])
         self.y = np.asarray(bed["y"])
-        self.dx = float(self.x[1] - self.x[0])
-        self.dy = float(self.y[1] - self.y[0])
         classes = np.asarray(bed["mask"])
         labels, _ = ndimage.label(classes == 3, np.ones((3, 3)))
-        sx, sy = POLAR.transform(-62.5, -67.5)
-        i = int(np.rint((sx - self.x[0]) / self.dx))
-        j = int(np.rint((sy - self.y[0]) / self.dy))
+        sx, sy = TO_XY.transform(*definition["floating_component_seed_lonlat"])
+        i, j, inside = nearest_grid_indices(sx, sy, self.x, self.y)
+        if not inside:
+            raise ValueError("Floating-component seed is outside the BedMachine crop")
         label = labels[j, i]
         if label == 0:
-            raise ValueError("Central LCIS seed is not mapped floating ice")
+            raise ValueError("Floating-component seed is not on mapped floating ice")
         self.floating = labels == label
 
     def contains(self, x, y):
         x, y = np.broadcast_arrays(np.asarray(x, float), np.asarray(y, float))
-        finite = np.isfinite(x) & np.isfinite(y)
-        i = np.rint(np.where(finite, (x - self.x[0]) / self.dx, 0)).astype(int)
-        j = np.rint(np.where(finite, (y - self.y[0]) / self.dy, 0)).astype(int)
-        inside = finite & (i >= 0) & (i < len(self.x)) & (j >= 0) & (j < len(self.y))
+        i, j, inside = nearest_grid_indices(x, y, self.x, self.y)
         inside &= self.floating[
             np.clip(j, 0, len(self.y) - 1), np.clip(i, 0, len(self.x) - 1)
         ]
-        lon, lat = LL.transform(x, y)
-        inside &= (lon >= -65.9) & (lon <= -60.25) & (lat >= -70.15) & (lat <= -65.8)
-        order = np.argsort(FRONT[:, 0])
-        inside &= lon <= np.interp(lat, FRONT[order, 0], FRONT[order, 1])
-        inside &= lat >= np.interp(lon, SOUTH[:, 0], SOUTH[:, 1])
+        lon, lat = TO_LL.transform(x, y)
+        west, east, south, north = self.bounds
+        inside &= (lon >= west) & (lon <= east) & (lat >= south) & (lat <= north)
+        inside &= lon <= np.interp(lat, self.front[:, 0], self.front[:, 1])
+        inside &= lat >= np.interp(lon, self.south[:, 0], self.south[:, 1])
         return inside
 
 

@@ -4,6 +4,7 @@ Cropping limits memory use. The 12 km crop padding is our implementation
 choice; it is not a flexure length or a CATS model parameter.
 """
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -12,13 +13,16 @@ import timescale
 import xarray as xr
 from pyproj import CRS, Transformer
 
+ANALYSIS_SETTINGS = Path(__file__).resolve().parents[1] / "aux_files" / "analysis.json"
+CROP_PADDING_KM = json.loads(ANALYSIS_SETTINGS.read_text())["cats_crop_padding_km"]
+
 
 def load_cats(path):
     """Open the native CATS model and retain its declared constituent order."""
     return Path(path), pyTMD.io.load_database().get("CATS2008-v2023")
 
 
-def _local_flexure_dataset(x3031, y3031, cats, constituents=None, buffer_km=12.0):
+def _local_flexure_dataset(x3031, y3031, cats, constituents=None, buffer_km=CROP_PADDING_KM):
     """Load a small native CATS subset and apply its supplied flexure field."""
     path, model = cats
     x3031, y3031 = np.asarray(x3031), np.asarray(y3031)
@@ -64,12 +68,13 @@ def _local_flexure_dataset(x3031, y3031, cats, constituents=None, buffer_km=12.0
 
 
 def cats_constants(
-    x3031, y3031, cats, constituents=("m2", "s2", "k1", "o1"), method="linear"
+    x3031, y3031, cats, constituents=("m2", "s2", "k1", "o1"), method="linear",
+    *, buffer_km=CROP_PADDING_KM,
 ):
     """Return officially flexure-scaled amplitude and Greenwich phase lag."""
     x3031, y3031 = np.asarray(x3031), np.asarray(y3031)
     tide, _, _, _ = _local_flexure_dataset(
-        x3031, y3031, cats, constituents=constituents
+        x3031, y3031, cats, constituents=constituents, buffer_km=buffer_km
     )
     xx, yy = tide.tmd.coords_as(x3031, y3031, type="drift", crs=3031)
     local = tide.tmd.interp(xx, yy, method=method, extrapolate=False)
@@ -82,36 +87,8 @@ def cats_constants(
     return amplitude, phase_lag
 
 
-def cats_flexure(x3031, y3031, cats, method="linear"):
-    """Interpolate the supplied CATS flexure fraction without clipping."""
-    x3031, y3031 = np.asarray(x3031), np.asarray(y3031)
-    tide, _, _, _ = _local_flexure_dataset(x3031, y3031, cats, constituents=("m2",))
-    xx, yy = tide.tmd.coords_as(x3031, y3031, type="drift", crs=3031)
-    local = tide.tmd.interp(xx, yy, method=method, extrapolate=False)
-    return np.asarray(local["flexure"]).squeeze()
-
-
-def cats_tide(
-    x3031, y3031, datetimes, cats, constituents=None, infer_minor=True, method="linear"
-):
-    """Predict flexure-aware CATS tide using the official pyTMD convention."""
-    x3031, y3031 = np.asarray(x3031), np.asarray(y3031)
-    tide, _, _, model = _local_flexure_dataset(
-        x3031, y3031, cats, constituents=constituents
-    )
-    tide_time = timescale.from_datetime(
-        np.asarray(datetimes, dtype="datetime64[ns]")
-    ).tide
-    xx, yy = tide.tmd.coords_as(x3031, y3031, type="drift", crs=3031)
-    local = tide.tmd.interp(xx, yy, method=method, extrapolate=False)
-    prediction = local.tmd.predict(tide_time, corrections=model["format"])
-    if infer_minor:
-        prediction += local.tmd.infer(tide_time, corrections=model["format"])
-    return np.asarray(prediction.tmd.to_units("m")).squeeze()
-
-
 def prepare_cats_tide(
-    x3031_bounds, y3031_bounds, cats, constituents=None, buffer_km=12.0
+    x3031_bounds, y3031_bounds, cats, constituents=None, buffer_km=CROP_PADDING_KM
 ):
     """Load and flexure-scale one reusable CATS subset for a fixed domain.
 

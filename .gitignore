@@ -13,6 +13,7 @@ outputs/
 results/
 tmp/
 work/
+/figure_inputs/
 *.nc
 *.h5
 *.hdf5
@@ -21,11 +22,10 @@ work/
 *.zarr/
 .ipynb_checkpoints/
 /figures/*
-!/figures/README.md
 !/figures/figure1.png
 !/figures/figure2.png
 !/figures/figure3.png
-Code/aux_files/resources.json
+!/figures/pipeline.png
 Code/input_paths.json
 
 .DS_Store

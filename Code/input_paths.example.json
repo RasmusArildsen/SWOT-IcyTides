@@ -1,14 +1,12 @@
 {
   "_note": "Only external inputs go here. Paths are relative to this JSON file. Generated files go under --work-dir.",
   "raster_raw": "../data/Raster",
-  "native_raw": "../data/PIXC",
   "atl06_raw": "../data/ATL06",
   "bedmachine_source": "../inputs/NSIDC-0756_BedMachineAntarctica_19700101-20191001_V04.1.nc",
   "rema_source": "../inputs/REMA_v2/tiles_32m",
   "cats_model": "../inputs/CATS2008_v2023.nc",
   "aviso_cache": "../data/aviso_cache",
-  "legacy_reference_surface": "../inputs/frozen_ancestor_mean_reference_100m.nc",
+  "phase_repairs": "../inputs/phase_repairs",
   "optical_mosaic": "../inputs/sentinel2_rgb_10m.tif",
-  "land_file": "../inputs/ne_50m_land.shp",
   "lima_mosaic": "../inputs/LIMA_Larsen_C_RGB_WMS_export_100m.tif"
 }
